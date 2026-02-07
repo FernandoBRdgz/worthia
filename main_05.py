@@ -16,7 +16,8 @@ client_deepseek = OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
 model_openai = "gpt-5-mini"
 model_deepseek = "deepseek-chat"
 model_transcribe = "whisper-1"
-model_transcribe = "gpt-4o-mini-transcribe"
+# model_transcribe = "gpt-4o-mini-transcribe"
+model_tts = "gpt-4o-mini-tts"
 
 st.title("📊 WorthIA")
 st.caption("💰Inversiones simplificadas")
@@ -82,26 +83,16 @@ if user_prompt:
 
     st.session_state.messages.append({"role": "assistant", "content": response})
 
+    audio_bytes = None
+    with st.spinner("Generando respuesta en audio..."):
+        try:
+            speech = client_openai.audio.speech.create(model=model_tts, voice="marin", input=response)
+            audio_bytes = speech.read()
+            if not audio_bytes:
+                st.info("No se pudo generar la respuesta en audio. Por favor, intenta nuevamente.")
+        except Exception as e:
+            st.error(f"Error al generar la respuesta en audio: {e}")
 
-#     for msg in st.session_state.messages:
-#         st.chat_message(msg["role"]).write(msg["content"])
+    st.audio(audio_bytes, format="audio/mp3", start_time=0, sample_rate=None, end_time=None, loop=False, autoplay=True, width="stretch")
 
-#     if prompt:= st.chat_input("Escribe tu mensaje aquí..."):
-#         st.session_state.messages.append({"role": "user", "content": prompt})
-#         st.chat_message("user").write(prompt)
-#         conversation = [{"role": "assistant", "content": stronger_prompt}]
-#         conversation.extend({"role": m["role"], "content": m["content"]} for m in st.session_state.messages)
-# for msg in st.session_state.messages:
-#     st.chat_message(msg["role"]).write(msg["content"])
-
-# if prompt:= st.chat_input("Escribe tu mensaje aquí..."):
-#     st.session_state.messages.append({"role": "user", "content": prompt})
-#     st.chat_message("user").write(prompt)
-#     conversation = [{"role": "assistant", "content": stronger_prompt}]
-#     conversation.extend({"role": m["role"], "content": m["content"]} for m in st.session_state.messages)
-
-#     with st.chat_message("assistant"):
-#         stream = client_deepseek.chat.completions.create(model=model_deepseek, messages=conversation, stream=True)
-#         response = st.write_stream(stream)
-
-#     st.session_state.messages.append({"role": "assistant", "content": response})
+    st.session_state.messages.append({"role": "assistant", "content": response, "audio": audio_bytes})
